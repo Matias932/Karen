@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Karen - Asistente Domótica"
+description = "Asistente de hogar inteligente con personalidad de Karen (de Spider-Man). El usuario habla por voz para controlar sus dispositivos electrónicos: Roku TV, Android TV y PS5. Karen interpreta el comando con IA, ejecuta la acción en el dispositivo correspondiente y responde con voz."
+version = "1.0.0"
+id = "artifacts/karen"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19835
+
+[services.development]
+run = "pnpm --filter @workspace/karen run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/karen", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/karen/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19835"
+BASE_PATH = "/"
