@@ -37,11 +37,6 @@ export default defineConfig({
     process.env.REPL_ID !== undefined
       ? [
           await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, '..'),
-            }),
-          ),
-          await import('@replit/vite-plugin-dev-banner').then((m) =>
             m.devBanner(),
           ),
         ]
@@ -69,6 +64,12 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
     fs: {
       strict: true,
     },

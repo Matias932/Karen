@@ -41,6 +41,11 @@ const CONTROL_DEVICE_TOOL: OpenAI.Chat.ChatCompletionTool = {
             "back",
             "play",
             "pause",
+            "up",
+            "down",
+            "left",
+            "right",
+            "select",
             "launch_app",
             "wake",
           ],
@@ -80,9 +85,11 @@ Your personality: helpful, concise, warm — like a trusted AI partner. Occasion
 Available devices:
 ${deviceList}
 
+Known Roku app IDs (use as appId for launch_app): Netflix=12, YouTube=837, Disney Plus=291097, Apple TV=551012, Prime Video=13, Pluto TV=252585, Anime Plus=663555.
+
 When the user asks to control a device, use the control_device tool. Match device names flexibly — "my Roku", "the TV", "PlayStation" all count. You can control multiple devices in one turn.
 
-Supported commands: power_on/off, volume_up/down, mute/unmute, home, back, play, pause, launch_app, wake (PS5 only).
+Supported commands: power_on/off, volume_up/down, mute/unmute, up, down, left, right, select, home, back, play, pause, launch_app, wake (PS5 only).
 
 If a command isn't supported (e.g., complex PS5 control beyond wake), explain briefly and suggest alternatives. Be honest if something can't be done.
 
@@ -102,7 +109,7 @@ export async function processKarenCommand(
   ];
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "openai/gpt-oss-20b",
     messages,
     tools: [CONTROL_DEVICE_TOOL],
     max_tokens: 300,
@@ -144,7 +151,7 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
 
   const transcription = await openai.audio.transcriptions.create({
     file: audioFile,
-    model: "whisper-1",
+    model: "whisper-large-v3-turbo",
     // No language specified - Whisper auto-detects (supports Spanish and English)
   });
 
@@ -153,8 +160,8 @@ export async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
 
 export async function generateKarenVoice(text: string): Promise<Buffer> {
   const response = await openai.audio.speech.create({
-    model: "tts-1",
-    voice: "nova", // Clear, professional female voice
+    model: "canopylabs/orpheus-v1-english",
+    voice: "hannah", // Clear female voice
     input: text,
     response_format: "mp3",
   });

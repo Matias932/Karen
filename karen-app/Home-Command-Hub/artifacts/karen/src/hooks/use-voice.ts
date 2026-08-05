@@ -129,5 +129,72 @@ export function useVoiceInteraction(conversationId: number | null) {
     };
   };
 
-  return { state, startListening, stopListening, messages };
+  
+  const sendTextMessage = async (text: string) => {
+    if (!conversationId) return;
+    addMessage({ role: 'user', content: text });
+    setState('processing');
+
+    const baseUrl = import.meta.env.BASE_URL;
+    const endpoint = `${baseUrl}api/openai/conversations/${conversationId}/messages`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text }),
+      });
+
+      if (!response.body) throw new Error("No response body");
+
+      setState('responding');
+
+      const decoder = new TextDecoder();
+      const reader = response.body.getReader();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const part of parts) {
+          if (part.startsWith('data: ')) {
+            const dataStr = part.substring(6);
+            if (dataStr === '[DONE]') continue;
+
+            try {
+              const event = JSON.parse(dataStr);
+
+              if (event.type === 'karen_response') {
+                addMessage({ role: 'karen', content: event.text });
+              } else if (event.type === 'audio') {
+                const audio = new Audio("data:audio/mp3;base64," + event.data);
+                audio.play();
+              } else if (event.type === 'device_action') {
+                addMessage({
+                  role: 'system',
+                  content: `Command: ${event.command} on ${event.deviceName} - ${event.message}`,
+                  isAction: true,
+                  success: event.success,
+                });
+              } else if (event.type === 'done') {
+                setState('idle');
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE event", e);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error communicating with Karen:", err);
+      setState('idle');
+    }
+  };
+
+  return { state, startListening, stopListening, sendTextMessage, messages };
 }

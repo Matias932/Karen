@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Mic, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVoiceInteraction, VoiceState } from '@/hooks/use-voice';
@@ -10,7 +10,15 @@ import { DeviceStatusRow } from '@/components/DeviceStatusRow';
 
 export function Home() {
   const { conversationId, isReady } = useKarenSession();
-  const { state, startListening, stopListening, messages } = useVoiceInteraction(conversationId);
+  const { state, startListening, stopListening, sendTextMessage, messages } = useVoiceInteraction(conversationId);
+  const [textInput, setTextInput] = useState("");
+
+  const handleSendText = () => {
+    if (textInput.trim() && state === "idle") {
+      sendTextMessage(textInput.trim());
+      setTextInput("");
+    }
+  };
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -87,6 +95,9 @@ export function Home() {
                 <div className="w-8 h-8 rounded-full bg-secondary shadow-[0_0_15px_#0066ff] animate-pulse" />
               )}
 
+          
+
+
               {state === 'listening' && (
                 <>
                   <div className="absolute inset-0 rounded-full border border-primary pulse-ring" />
@@ -94,6 +105,25 @@ export function Home() {
                 </>
               )}
             </button>
+
+          <div className="flex gap-2 mt-4 w-full max-w-sm">
+            <input
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSendText(); }}
+              disabled={!isReady || state !== 'idle'}
+              placeholder="Escribile a Karen..."
+              className="flex-1 bg-card border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendText}
+              disabled={!isReady || state !== 'idle' || !textInput.trim()}
+              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm disabled:opacity-50"
+            >
+              Enviar
+            </button>
+          </div>
             
             <div className="mt-4 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase h-4">
               {!isReady ? 'INITIALIZING_SESSION...' :
