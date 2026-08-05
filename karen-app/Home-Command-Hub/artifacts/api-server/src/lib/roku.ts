@@ -103,7 +103,7 @@ export async function isRokuReachable(
   try {
     const response = await fetch(
       `http://${ip}:${port}/query/device-info`,
-      fetchOptions({ signal: AbortSignal.timeout(3000) }),
+      fetchOptions({ signal: AbortSignal.timeout(10000) }),
     );
     return response.ok;
   } catch {
