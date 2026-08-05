@@ -1,7 +1,7 @@
 // Roku External Control Protocol (ECP)
 // HTTP API running on port 8060 of the Roku device
 
-import { ProxyAgent } from "undici";
+import { fetch, ProxyAgent } from "undici";
 
 const DEFAULT_ROKU_PORT = 8060;
 
