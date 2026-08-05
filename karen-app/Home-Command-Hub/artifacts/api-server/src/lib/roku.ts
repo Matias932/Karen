@@ -1,7 +1,21 @@
 // Roku External Control Protocol (ECP)
 // HTTP API running on port 8060 of the Roku device
 
+import { ProxyAgent } from "undici";
+
 const DEFAULT_ROKU_PORT = 8060;
+
+const TAILSCALE_PROXY_URL = process.env.TAILSCALE_PROXY_URL;
+const proxyDispatcher = TAILSCALE_PROXY_URL
+  ? new ProxyAgent(TAILSCALE_PROXY_URL)
+  : undefined;
+
+function fetchOptions(extra: RequestInit = {}): RequestInit {
+  return {
+    ...extra,
+    ...(proxyDispatcher ? ({ dispatcher: proxyDispatcher } as any) : {}),
+  };
+}
 
 const ROKU_KEYCODES: Record<string, string> = {
   power_on: "PowerOn",
@@ -33,10 +47,10 @@ export async function sendRokuKeypress(
   if (!keycode) throw new Error(`Unknown Roku command: ${command}`);
 
   const url = `http://${ip}:${port}/keypress/${keycode}`;
-  const response = await fetch(url, {
-    method: "POST",
-    signal: AbortSignal.timeout(5000),
-  });
+  const response = await fetch(
+    url,
+    fetchOptions({ method: "POST", signal: AbortSignal.timeout(5000) }),
+  );
   if (!response.ok)
     throw new Error(`Roku keypress failed: ${response.status}`);
 }
@@ -47,10 +61,10 @@ export async function launchRokuApp(
   port = DEFAULT_ROKU_PORT,
 ): Promise<void> {
   const url = `http://${ip}:${port}/launch/${encodeURIComponent(appId)}`;
-  const response = await fetch(url, {
-    method: "POST",
-    signal: AbortSignal.timeout(5000),
-  });
+  const response = await fetch(
+    url,
+    fetchOptions({ method: "POST", signal: AbortSignal.timeout(5000) }),
+  );
   if (!response.ok)
     throw new Error(`Roku app launch failed: ${response.status}`);
 }
@@ -60,14 +74,13 @@ export async function listRokuApps(
   port = DEFAULT_ROKU_PORT,
 ): Promise<Array<{ id: string; name: string; type: string; version: string | null }>> {
   const url = `http://${ip}:${port}/query/apps`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+  const response = await fetch(url, fetchOptions({ signal: AbortSignal.timeout(5000) }));
   if (!response.ok)
     throw new Error(`Roku apps query failed: ${response.status}`);
 
   const xml = await response.text();
   const apps: Array<{ id: string; name: string; type: string; version: string | null }> = [];
 
-  // Parse XML: <app id="..." type="..." version="...">AppName</app>
   const regex =
     /<app\s+id="([^"]+)"(?:[^>]*?type="([^"]*)")?(?:[^>]*?version="([^"]*)")?[^>]*>([^<]+)<\/app>/g;
   let match;
@@ -88,9 +101,10 @@ export async function isRokuReachable(
   port = DEFAULT_ROKU_PORT,
 ): Promise<boolean> {
   try {
-    const response = await fetch(`http://${ip}:${port}/query/device-info`, {
-      signal: AbortSignal.timeout(3000),
-    });
+    const response = await fetch(
+      `http://${ip}:${port}/query/device-info`,
+      fetchOptions({ signal: AbortSignal.timeout(3000) }),
+    );
     return response.ok;
   } catch {
     return false;
