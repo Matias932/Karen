@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://karen-backend-7775.onrender.com/api/:path*"
+    }
+  ]
+}
